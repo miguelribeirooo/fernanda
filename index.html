@@ -31,6 +31,15 @@
       to { transform: translateY(-400px); opacity: 0; }
     }
 
+    .btn {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: #fb7185;
+      color: white;
+      border-radius: 999px;
+    }
+
     .envelope {
       display: none;
       position: relative;
@@ -72,17 +81,6 @@
 
     .open .flap { transform: rotateX(180deg); }
     .open .letter { transform: translateY(0); }
-
-    .heart {
-      position: absolute;
-      color: #fb7185;
-      animation: floatUp 5s linear infinite;
-    }
-
-    @keyframes floatUp {
-      from { transform: translateY(0); opacity: 1; }
-      to { transform: translateY(-600px); opacity: 0; }
-    }
   </style>
 </head>
 
@@ -99,6 +97,8 @@
 
     <p id="scoreText" class="mt-4 text-gray-700">Pontos: 0 / 10</p>
 
+    <button id="retryBtn" class="btn" onclick="restartGame()">Tentar novamente 🔄</button>
+
     <div id="envelope" class="envelope" onclick="abrirCarta()">
       <div class="flap"></div>
       <div class="letter">
@@ -108,20 +108,36 @@
   </div>
 
   <script>
-    let score = 0;
-    let fase = 1;
-    let lives = 3;
-    let startTime = Date.now();
-    let gameActive = true;
-
-    let spawnRate = 800; // mais rápido
-    let duration = 3; // mais rápido
+    let score, fase, lives, startTime, gameActive;
+    let currentGameId = 0;
+    let spawnRate, duration;
+    let spawnInterval, timerInterval;
 
     const game = document.getElementById('game');
-    let spawnInterval;
-    let timerInterval;
+
+    function init() {
+      currentGameId++; // novo jogo, invalida timeouts antigos
+      score = 0;
+      fase = 1;
+      lives = 3;
+      startTime = Date.now();
+      gameActive = true;
+      spawnRate = 800;
+      duration = 3;
+
+      document.getElementById('retryBtn').style.display = 'none';
+      document.getElementById('game').style.display = 'block';
+      document.getElementById('envelope').style.display = 'none';
+      document.getElementById('faseText').innerText = 'Fase 1: toque nos corações 💘';
+      document.getElementById('scoreText').innerText = 'Pontos: 0 / 10';
+      document.getElementById('livesText').innerText = 'Vidas: ❤️❤️❤️';
+
+      startTimer();
+      startGame();
+    }
 
     function startTimer() {
+      clearInterval(timerInterval);
       timerInterval = setInterval(() => {
         if (!gameActive) return;
         const tempo = Math.floor((Date.now() - startTime) / 1000);
@@ -129,18 +145,16 @@
       }, 1000);
     }
 
-    function updateLives() {
-      document.getElementById('livesText').innerText = 'Vidas: ' + '❤️'.repeat(lives);
-    }
-
     function gameOver() {
       gameActive = false;
       clearInterval(spawnInterval);
       clearInterval(timerInterval);
-      document.getElementById('faseText').innerText = 'Você perdeu 😢 tenta de novo';
+      document.getElementById('faseText').innerText = 'Você perdeu 😢';
+      document.getElementById('retryBtn').style.display = 'inline-block';
     }
 
     function criarCoracao() {
+      const gameId = currentGameId; // captura id do jogo atual
       if (!gameActive) return;
 
       const heart = document.createElement('div');
@@ -184,15 +198,15 @@
         }
       };
 
-      // se não clicar e chegar no topo
       setTimeout(() => {
+        // evita bug de vidas após restart
+        if (gameId !== currentGameId) return;
+
         if (!clicado && gameActive) {
           lives--;
-          updateLives();
+          document.getElementById('livesText').innerText = 'Vidas: ' + '❤️'.repeat(lives);
           heart.remove();
-          if (lives <= 0) {
-            gameOver();
-          }
+          if (lives <= 0) gameOver();
         }
       }, duration * 1000);
 
@@ -200,13 +214,16 @@
     }
 
     function startGame() {
-      spawnInterval = setInterval(() => {
-        criarCoracao();
-      }, spawnRate);
+      clearInterval(spawnInterval);
+      spawnInterval = setInterval(criarCoracao, spawnRate);
     }
 
-    startTimer();
-    startGame();
+    function restartGame() {
+      game.innerHTML = '';
+      init();
+    }
+
+    init();
 
     const mensagem = "Eu poderia tentar escrever algo perfeito... mas a verdade é que você já é isso tudo. Desde que comecei a falar com você, tudo ficou mais leve. E eu quero continuar descobrindo cada detalhe seu.";
     let index = 0;
@@ -222,19 +239,7 @@
     function abrirCarta() {
       const envelope = document.getElementById('envelope');
       envelope.classList.toggle('open');
-
       if (index === 0) escreverTexto();
-
-      for (let i = 0; i < 15; i++) {
-        const heart = document.createElement('div');
-        heart.className = 'heart';
-        heart.innerHTML = '❤️';
-        heart.style.left = Math.random() * window.innerWidth + 'px';
-        heart.style.bottom = '0px';
-        document.body.appendChild(heart);
-
-        setTimeout(() => heart.remove(), 5000);
-      }
     }
   </script>
 
