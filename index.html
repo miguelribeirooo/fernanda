@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Para Fernanda ❤️</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body { overflow: hidden; }
+
+    .game-area {
+      position: relative;
+      width: 300px;
+      height: 400px;
+      background: #ffe4e6;
+      border-radius: 20px;
+      margin: auto;
+      overflow: hidden;
+    }
+
+    .bubble {
+      position: absolute;
+      font-size: 28px;
+      cursor: pointer;
+      animation: subir var(--dur, 3s) linear forwards;
+    }
+
+    @keyframes subir {
+      from { transform: translateY(0); opacity: 1; }
+      to { transform: translateY(-400px); opacity: 0; }
+    }
+
+    .envelope {
+      display: none;
+      position: relative;
+      width: 300px;
+      height: 200px;
+      background: #fda4af;
+      margin: 20px auto 0;
+      border-radius: 10px;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .flap {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: #fb7185;
+      top: 0;
+      left: 0;
+      transform-origin: top;
+      transition: transform 0.8s ease;
+      clip-path: polygon(0 0, 100% 0, 50% 50%);
+      z-index: 2;
+    }
+
+    .letter {
+      position: absolute;
+      width: 90%;
+      height: 90%;
+      background: white;
+      top: 5%;
+      left: 5%;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      transform: translateY(100%);
+      transition: transform 0.8s ease;
+    }
+
+    .open .flap { transform: rotateX(180deg); }
+    .open .letter { transform: translateY(0); }
+
+    .heart {
+      position: absolute;
+      color: #fb7185;
+      animation: floatUp 5s linear infinite;
+    }
+
+    @keyframes floatUp {
+      from { transform: translateY(0); opacity: 1; }
+      to { transform: translateY(-600px); opacity: 0; }
+    }
+  </style>
+</head>
+
+<body class="bg-pink-50 flex items-center justify-center min-h-screen">
+
+  <div class="text-center">
+    <h1 class="text-4xl font-bold text-pink-600 mb-4">Para Fernanda ❤️</h1>
+
+    <p id="faseText" class="mb-2 text-gray-700">Fase 1: toque nos corações 💘</p>
+    <p id="timer" class="mb-2 text-gray-600">Tempo: 0s</p>
+    <p id="livesText" class="mb-2 text-red-500">Vidas: ❤️❤️❤️</p>
+
+    <div class="game-area" id="game"></div>
+
+    <p id="scoreText" class="mt-4 text-gray-700">Pontos: 0 / 10</p>
+
+    <div id="envelope" class="envelope" onclick="abrirCarta()">
+      <div class="flap"></div>
+      <div class="letter">
+        <p id="texto" class="text-gray-700"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let score = 0;
+    let fase = 1;
+    let lives = 3;
+    let startTime = Date.now();
+    let gameActive = true;
+
+    let spawnRate = 800; // mais rápido
+    let duration = 3; // mais rápido
+
+    const game = document.getElementById('game');
+    let spawnInterval;
+    let timerInterval;
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        if (!gameActive) return;
+        const tempo = Math.floor((Date.now() - startTime) / 1000);
+        document.getElementById('timer').innerText = `Tempo: ${tempo}s`;
+      }, 1000);
+    }
+
+    function updateLives() {
+      document.getElementById('livesText').innerText = 'Vidas: ' + '❤️'.repeat(lives);
+    }
+
+    function gameOver() {
+      gameActive = false;
+      clearInterval(spawnInterval);
+      clearInterval(timerInterval);
+      document.getElementById('faseText').innerText = 'Você perdeu 😢 tenta de novo';
+    }
+
+    function criarCoracao() {
+      if (!gameActive) return;
+
+      const heart = document.createElement('div');
+      heart.className = 'bubble';
+      heart.innerHTML = '❤️';
+      heart.style.setProperty('--dur', duration + 's');
+
+      heart.style.left = Math.random() * 260 + 'px';
+      heart.style.bottom = '0px';
+
+      let clicado = false;
+
+      heart.onclick = () => {
+        if (!gameActive) return;
+        clicado = true;
+        heart.remove();
+        score++;
+
+        if (fase === 1) {
+          document.getElementById('scoreText').innerText = `Pontos: ${score} / 10`;
+          if (score >= 10) {
+            fase = 2;
+            score = 0;
+            spawnRate = 600;
+            duration = 2.5;
+            document.getElementById('faseText').innerText = 'Fase 2: quase lá... 😏';
+            document.getElementById('scoreText').innerText = 'Pontos: 0 / 6';
+          }
+        } else {
+          document.getElementById('scoreText').innerText = `Pontos: ${score} / 6`;
+          if (score >= 6) {
+            gameActive = false;
+            clearInterval(spawnInterval);
+            clearInterval(timerInterval);
+            const tempoFinal = Math.floor((Date.now() - startTime) / 1000);
+            document.getElementById('game').style.display = 'none';
+            document.getElementById('envelope').style.display = 'block';
+            document.getElementById('faseText').innerText = `Você conseguiu em ${tempoFinal}s 💖`;
+            document.getElementById('scoreText').innerText = 'Agora pode abrir 💌';
+          }
+        }
+      };
+
+      // se não clicar e chegar no topo
+      setTimeout(() => {
+        if (!clicado && gameActive) {
+          lives--;
+          updateLives();
+          heart.remove();
+          if (lives <= 0) {
+            gameOver();
+          }
+        }
+      }, duration * 1000);
+
+      game.appendChild(heart);
+    }
+
+    function startGame() {
+      spawnInterval = setInterval(() => {
+        criarCoracao();
+      }, spawnRate);
+    }
+
+    startTimer();
+    startGame();
+
+    const mensagem = "Eu poderia tentar escrever algo perfeito... mas a verdade é que você já é isso tudo. Desde que comecei a falar com você, tudo ficou mais leve. E eu quero continuar descobrindo cada detalhe seu.";
+    let index = 0;
+
+    function escreverTexto() {
+      if (index < mensagem.length) {
+        document.getElementById('texto').innerHTML += mensagem.charAt(index);
+        index++;
+        setTimeout(escreverTexto, 40);
+      }
+    }
+
+    function abrirCarta() {
+      const envelope = document.getElementById('envelope');
+      envelope.classList.toggle('open');
+
+      if (index === 0) escreverTexto();
+
+      for (let i = 0; i < 15; i++) {
+        const heart = document.createElement('div');
+        heart.className = 'heart';
+        heart.innerHTML = '❤️';
+        heart.style.left = Math.random() * window.innerWidth + 'px';
+        heart.style.bottom = '0px';
+        document.body.appendChild(heart);
+
+        setTimeout(() => heart.remove(), 5000);
+      }
+    }
+  </script>
+
+</body>
+</html>
